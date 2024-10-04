@@ -1,0 +1,101 @@
+---
+title: "assingment 5 redo"
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-09-29"
+---
+
+```{r setup, include=TRUE}
+#install.packages("dplyr")
+library(tidyverse)
+library(readr) 
+library(tidyr) 
+
+library(dplyr)
+data <- read.table(file = "C:/Users/dbrusche/Desktop/wide_airport.csv", header = TRUE, sep = "\t")
+
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars, echo=TRUE}
+# renaming columns 
+colnames(data)[1] <- "Airline"
+colnames(data)[2] <- "Arrival"
+data[2, 1] <- "ALASKA"
+data[5, 1] <- "AM WEST"
+
+# Transform to long format and remove NAs
+long_data <- data %>%
+  pivot_longer(
+    cols = starts_with("Los"):Seattle,
+    names_to = "Destination",
+    values_to = "Frequency"
+  ) %>%
+  drop_na()  # This will remove rows with NA in the Delay column
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=TRUE}
+summary_data <- long_data %>%
+  group_by(Airline, Arrival) %>%
+  summarise(Total = sum(Frequency), .groups = 'drop') %>%
+  mutate(Percentage = Total / sum(Total) * 100)
+
+# Filter only delays
+delay_data <- summary_data %>%
+  filter(Arrival == "delayed")
+
+# Print the summary table
+print("Summary of Delays:")
+print(delay_data)
+
+##barplot
+ggplot(delay_data, aes(x = Airline, y = Percentage, fill = Airline)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Percentage of Delays by Airline",
+       x = "Airline",
+       y = "Percentage of Delays") +
+  theme_minimal()
+
+#From the summary data, we see that the total count for Alaska Airlines was 501 delayed flights and 3,274 on-time flights, resulting in a percentage breakdown of 4.55% for delayed and 29.76% for on-time. For AM West, the delayed count was 787, with a percentage breakdown of 7.15%, and an on-time count of 6,438, with a percentage of 58.52%. Focusing on delays in the two airlines, the bar plot visually indicates that AM West is often more delayed than Alaska Airlines.
+
+
+```
+
+```{r pressure2, echo=TRUE}
+
+summary_data2 <- long_data %>%
+  group_by(Destination, Arrival) %>%
+  summarise(Total = sum(Frequency), .groups = 'drop') %>%
+  mutate(Percentage = Total / sum(Total) * 100)
+
+delay_data2 <- summary_data2 %>%
+  filter(Arrival == "delayed")
+
+
+ggplot(delay_data2, aes(x = Destination, y = Percentage, fill = Destination)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Percentage of Delays by Destination",
+       x = "Destination",
+       y = "Percentage of Delays") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format(scale = 1, accuracy = 0.01)) +
+  geom_text(aes(label = paste0(round(Percentage, 2), "%")), vjust = -0.5)
+
+#From the summary, we can see the delayed and on-time counts for each destination along with their percentages. For example, Los Angeles has a delayed count of 179 (1.69%) and an on-time count of 1,191 (10.82%). Focusing on the delayed data in the bar plot, we can visually see that Phoenix (3.88%) has the highest delay, followed by Seattle (3.33%), San Francisco (2.1%), Los Angeles (1.63%), and San Diego (0.77%).
+
+#The discrepancy in examining only the airlines for arrival data is the lack of information it provides. We only know that one airline has more delays but have no insight into what is causing those delays. In contrast, when looking at the data city by city, we gain a better understanding of which cities have more delays for the airline. This can lead to improved policies for those locations
+
+```
